@@ -98,6 +98,8 @@ print(y.requires_grad)
 print(x.eq(y).all())
 
 """
+True
+False
 tensor(True)
 """ 
 
