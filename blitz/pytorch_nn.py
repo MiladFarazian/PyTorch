@@ -55,5 +55,77 @@ print(len(params))
 print(params[0].size())  # conv1's .weight
 
 """
+10
+torch.Size([6, 1, 3, 3])
+"""
+
+input = torch.randn(1, 1, 32, 32)
+out = net(input)
+print(out)
 
 """
+tensor([[ 0.1055, -0.0093, -0.0270, -0.1208,  0.0192, -0.0235, -0.0290, -0.1041,
+          0.0058, -0.0525]], grad_fn=<AddmmBackward>)
+"""
+
+net.zero_grad()
+out.backward(torch.randn(1, 10))
+
+# Loss Function
+
+output = net(input)
+target = torch.randn(10)  # a dummy target, for example
+target = target.view(1, -1)  # make it the same shape as output
+criterion = nn.MSELoss()
+
+loss = criterion(output, target)
+print(loss)
+
+"""
+tensor(1.1977, grad_fn=<MseLossBackward>)
+"""
+
+print(loss.grad_fn)  # MSELoss
+print(loss.grad_fn.next_functions[0][0])  # Linear
+print(loss.grad_fn.next_functions[0][0].next_functions[0][0])  # ReLU
+
+"""
+<MseLossBackward object at 0x7fdc30f84a20>
+<AddmmBackward object at 0x7fdc30f84a58>
+<AccumulateGrad object at 0x7fdc30f84a58>
+"""
+
+# Backprop
+
+net.zero_grad()     # zeroes the gradient buffers of all parameters
+
+print('conv1.bias.grad before backward')
+print(net.conv1.bias.grad)
+
+loss.backward()
+
+print('conv1.bias.grad after backward')
+print(net.conv1.bias.grad)
+
+"""
+conv1.bias.grad before backward
+tensor([0., 0., 0., 0., 0., 0.])
+conv1.bias.grad after backward
+tensor([-0.0002,  0.0147, -0.0001,  0.0170, -0.0003, -0.0066])
+"""
+
+learning_rate = 0.01
+for f in net.parameters():
+    f.data.sub_(f.grad.data * learning_rate)
+
+import torch.optim as optim
+
+# create your optimizer
+optimizer = optim.SGD(net.parameters(), lr=0.01)
+
+# in your training loop:
+optimizer.zero_grad()   # zero the gradient buffers
+output = net(input)
+loss = criterion(output, target)
+loss.backward()
+optimizer.step()    # Does the update
