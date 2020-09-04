@@ -133,3 +133,91 @@ Finished Training
 
 PATH = './cifar_net.pth'
 torch.save(net.state_dict(), PATH)
+
+
+
+
+# 5. Test the network on the test data
+
+dataiter = iter(testloader)
+images, labels = dataiter.next()
+
+# print images
+imshow(torchvision.utils.make_grid(images))
+print('GroundTruth: ', ' '.join('%5s' % classes[labels[j]] for j in range(4)))
+
+"""GroundTruth:   cat  ship  ship plane"""
+
+net = Net()
+net.load_state_dict(torch.load(PATH))
+
+outputs = net(images)
+
+_, predicted = torch.max(outputs, 1)
+
+print('Predicted: ', ' '.join('%5s' % classes[predicted[j]]
+                              for j in range(4)))
+
+"""Predicted:    cat  ship  ship plane"""
+
+correct = 0
+total = 0
+with torch.no_grad():
+    for data in testloader:
+        images, labels = data
+        outputs = net(images)
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+print('Accuracy of the network on the 10000 test images: %d %%' % (
+    100 * correct / total))
+
+"""Accuracy of the network on the 10000 test images: 55 %"""
+
+class_correct = list(0. for i in range(10))
+class_total = list(0. for i in range(10))
+with torch.no_grad():
+    for data in testloader:
+        images, labels = data
+        outputs = net(images)
+        _, predicted = torch.max(outputs, 1)
+        c = (predicted == labels).squeeze()
+        for i in range(4):
+            label = labels[i]
+            class_correct[label] += c[i].item()
+            class_total[label] += 1
+
+
+for i in range(10):
+    print('Accuracy of %5s : %2d %%' % (
+        classes[i], 100 * class_correct[i] / class_total[i]))
+
+"""
+Accuracy of plane : 64 %
+Accuracy of   car : 52 %
+Accuracy of  bird : 32 %
+Accuracy of   cat : 45 %
+Accuracy of  deer : 48 %
+Accuracy of   dog : 43 %
+Accuracy of  frog : 69 %
+Accuracy of horse : 68 %
+Accuracy of  ship : 67 %
+Accuracy of truck : 62 %
+"""
+
+
+
+# Training on GPU
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+# Assuming that we are on a CUDA machine, this should print a CUDA device:
+
+print(device)
+
+""" """
+
+net.to(device)
+
+inputs, labels = data[0].to(device), data[1].to(device)
